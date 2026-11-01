@@ -1,0 +1,241 @@
+"""Configuración tipada cargada desde el entorno."""
+
+from functools import lru_cache
+from pathlib import Path
+
+from pydantic import SecretStr, field_validator, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    app_name: str = "WUF Predict API"
+    environment: str = "development"
+    database_url: SecretStr
+    jwt_secret: SecretStr
+    jwt_issuer: str = "wuf-predict"
+    access_token_minutes: int = 30
+    login_attempts_per_minute: int = 5
+    api_page_size_default: int = 20
+    api_page_size_max: int = 100
+    api_offset_max: int = 100_000
+    catalog_csv_max_bytes: int = 20_000_000
+    model_artifact_dir: Path = Path("../artifacts/models")
+    model_min_accuracy: float = 0.75
+    model_default_test_size: float = 0.2
+    model_default_estimators: int = 300
+    model_random_seed: int = 42
+    model_priority_high_max: float = 0.35
+    model_priority_medium_max: float = 0.65
+    consistency_test_size: float = 0.25
+    consistency_random_seed: int = 42
+    consistency_max_depth: int = 3
+    consistency_high_min_captures: int = 3
+    consistency_high_min_age_days: int = 180
+    consistency_medium_min_captures: int = 2
+    consistency_medium_min_age_days: int = 60
+    consistency_max_capture_gap_days: int = 14
+    # Semilla y reinicios de K-Means para poder repetir el análisis OE3.
+    segmentation_random_seed: int = 42
+    segmentation_n_init: int = 20
+    # Metas y tamaño de historial que presenta HU08; pueden cambiarse desde backend/.env.
+    dashboard_oe1_target_increase_percent: float = 25.0
+    dashboard_oe2_target_accuracy_percent: float = 98.0
+    dashboard_oe3_target_coverage_percent: float = 100.0
+    dashboard_history_capture_limit: int = 6
+    dashboard_activity_limit: int = 8
+    cors_origins: str = "http://localhost:5500,http://127.0.0.1:5500"
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        case_sensitive=False,
+    )
+
+    @model_validator(mode="after")
+    def validate_page_size_bounds(self) -> "Settings":
+        if self.api_page_size_default > self.api_page_size_max:
+            raise ValueError("API_PAGE_SIZE_DEFAULT no puede exceder API_PAGE_SIZE_MAX.")
+        return self
+
+    @field_validator("access_token_minutes")
+    @classmethod
+    def validate_token_lifetime(cls, value: int) -> int:
+        if not 1 <= value <= 1440:
+            raise ValueError("ACCESS_TOKEN_MINUTES debe estar entre 1 y 1440.")
+        return value
+
+    @field_validator("login_attempts_per_minute")
+    @classmethod
+    def validate_login_rate(cls, value: int) -> int:
+        if not 1 <= value <= 60:
+            raise ValueError("LOGIN_ATTEMPTS_PER_MINUTE debe estar entre 1 y 60.")
+        return value
+
+    @field_validator("api_page_size_default", "api_page_size_max")
+    @classmethod
+    def validate_page_size(cls, value: int) -> int:
+        if not 1 <= value <= 1000:
+            raise ValueError("El tamaño de página de API debe estar entre 1 y 1000.")
+        return value
+
+    @field_validator("api_offset_max")
+    @classmethod
+    def validate_api_offset(cls, value: int) -> int:
+        if not 0 <= value <= 1_000_000:
+            raise ValueError("API_OFFSET_MAX está fuera del rango permitido.")
+        return value
+
+    @field_validator("jwt_secret")
+    @classmethod
+    def validate_jwt_secret(cls, value: SecretStr) -> SecretStr:
+        secret = value.get_secret_value()
+        if len(secret) < 32 or "REEMPLAZAR" in secret.upper():
+            raise ValueError("JWT_SECRET debe ser aleatorio, reemplazado y tener al menos 32 caracteres.")
+        return value
+
+    @field_validator("cors_origins")
+    @classmethod
+    def validate_cors_origins(cls, value: str) -> str:
+        origins = [origin.strip() for origin in value.split(",") if origin.strip()]
+        if not origins or "*" in origins:
+            raise ValueError("CORS_ORIGINS debe enumerar orígenes explícitos y no puede contener '*'.")
+        return value
+
+    @field_validator("catalog_csv_max_bytes")
+    @classmethod
+    def validate_csv_limit(cls, value: int) -> int:
+        if not 1024 <= value <= 100_000_000:
+            raise ValueError("CATALOG_CSV_MAX_BYTES debe estar entre 1024 y 100000000.")
+        return value
+
+    @field_validator("model_min_accuracy", "model_priority_high_max", "model_priority_medium_max")
+    @classmethod
+    def validate_model_probability(cls, value: float) -> float:
+        if not 0 <= value <= 1:
+            raise ValueError("Los umbrales del modelo deben estar entre 0 y 1.")
+        return value
+
+    @field_validator("model_default_test_size")
+    @classmethod
+    def validate_model_test_size(cls, value: float) -> float:
+        if not 0.1 <= value <= 0.4:
+            raise ValueError("MODEL_DEFAULT_TEST_SIZE debe estar entre 0.10 y 0.40.")
+        return value
+
+    @field_validator("model_default_estimators")
+    @classmethod
+    def validate_model_estimators(cls, value: int) -> int:
+        if not 50 <= value <= 1000:
+            raise ValueError("MODEL_DEFAULT_ESTIMATORS debe estar entre 50 y 1000.")
+        return value
+
+    @field_validator("consistency_test_size")
+    @classmethod
+    def validate_consistency_test_size(cls, value: float) -> float:
+        if not 0.1 <= value <= 0.4:
+            raise ValueError("CONSISTENCY_TEST_SIZE debe estar entre 0.10 y 0.40.")
+        return value
+
+    @field_validator("consistency_random_seed")
+    @classmethod
+    def validate_consistency_seed(cls, value: int) -> int:
+        if not 0 <= value <= 2_147_483_647:
+            raise ValueError("CONSISTENCY_RANDOM_SEED está fuera del rango permitido.")
+        return value
+
+    @field_validator("segmentation_random_seed")
+    @classmethod
+    def validate_segmentation_seed(cls, value: int) -> int:
+        if not 0 <= value <= 2_147_483_647:
+            raise ValueError("SEGMENTATION_RANDOM_SEED está fuera del rango permitido.")
+        return value
+
+    @field_validator("segmentation_n_init")
+    @classmethod
+    def validate_segmentation_n_init(cls, value: int) -> int:
+        if not 1 <= value <= 100:
+            raise ValueError("SEGMENTATION_N_INIT debe estar entre 1 y 100.")
+        return value
+
+    @field_validator(
+        "dashboard_oe1_target_increase_percent",
+        "dashboard_oe2_target_accuracy_percent",
+        "dashboard_oe3_target_coverage_percent",
+    )
+    @classmethod
+    def validate_dashboard_targets(cls, value: float) -> float:
+        if not 0 <= value <= 100:
+            raise ValueError("Las metas del Dashboard deben estar entre 0 y 100.")
+        return value
+
+    @field_validator("dashboard_history_capture_limit")
+    @classmethod
+    def validate_dashboard_history_limit(cls, value: int) -> int:
+        if not 3 <= value <= 20:
+            raise ValueError("DASHBOARD_HISTORY_CAPTURE_LIMIT debe estar entre 3 y 20.")
+        return value
+
+    @field_validator("dashboard_activity_limit")
+    @classmethod
+    def validate_dashboard_activity_limit(cls, value: int) -> int:
+        if not 1 <= value <= 20:
+            raise ValueError("DASHBOARD_ACTIVITY_LIMIT debe estar entre 1 y 20.")
+        return value
+
+    @field_validator("consistency_max_depth")
+    @classmethod
+    def validate_consistency_depth(cls, value: int) -> int:
+        if not 1 <= value <= 4:
+            raise ValueError("CONSISTENCY_MAX_DEPTH debe estar entre 1 y 4.")
+        return value
+
+    @field_validator("consistency_max_capture_gap_days")
+    @classmethod
+    def validate_consistency_capture_gap(cls, value: int) -> int:
+        if not 1 <= value <= 31:
+            raise ValueError("CONSISTENCY_MAX_CAPTURE_GAP_DAYS debe estar entre 1 y 31.")
+        return value
+
+    @field_validator(
+        "consistency_high_min_captures", "consistency_medium_min_captures",
+    )
+    @classmethod
+    def validate_consistency_captures(cls, value: int) -> int:
+        if not 2 <= value <= 12:
+            raise ValueError("Los umbrales de capturas HU04 deben estar entre 2 y 12.")
+        return value
+
+    @field_validator("consistency_high_min_age_days", "consistency_medium_min_age_days")
+    @classmethod
+    def validate_consistency_age(cls, value: int) -> int:
+        if not 1 <= value <= 3650:
+            raise ValueError("Los umbrales de antigüedad HU04 deben estar entre 1 y 3650 días.")
+        return value
+
+    @model_validator(mode="after")
+    def validate_consistency_thresholds(self) -> "Settings":
+        if self.consistency_medium_min_captures >= self.consistency_high_min_captures:
+            raise ValueError("El umbral de capturas medio debe ser menor que el alto.")
+        if self.consistency_medium_min_age_days >= self.consistency_high_min_age_days:
+            raise ValueError("El umbral de antigüedad medio debe ser menor que el alto.")
+        return self
+
+    @model_validator(mode="after")
+    def validate_priority_bounds(self) -> "Settings":
+        if self.model_priority_high_max >= self.model_priority_medium_max:
+            raise ValueError("El límite de prioridad alta debe ser menor al límite medio.")
+        return self
+
+    @property
+    def allowed_origins(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def login_rate_limit(self) -> str:
+        return f"{self.login_attempts_per_minute}/minute"
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

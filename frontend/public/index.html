@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WUF Predict</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="styles.css?v=hu06-export-row-2">
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+
+<div id="login">
+  <form class="login-card" onsubmit="return login(event)">
+    <div class="wordmark"><i data-lucide="paw-print"></i>WUF Predict</div>
+    <p class="sub">Soporte a decisiones para la adopción responsable</p>
+    <div class="field"><label for="email">Correo electrónico</label><input id="email" type="email" autocomplete="username" required placeholder="nombre@wuf.pe"></div>
+    <div class="field"><label for="password">Contraseña</label><input id="password" type="password" autocomplete="current-password" required></div>
+    <button class="primary" type="submit" style="width:100%;justify-content:center;"><i data-lucide="log-in"></i>Iniciar sesión</button>
+    <details>
+      <summary>Acceso al sistema</summary>
+      <p class="muted">Las cuentas se aprovisionan desde el backend. No se incluyen credenciales de demostración.</p>
+    </details>
+  </form>
+</div>
+
+<div id="app">
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="wordmark"><i data-lucide="paw-print"></i>WUF Predict</div>
+      <button type="button" class="icon sidebar-close" id="sidebarClose" aria-label="Cerrar menú" title="Cerrar menú"><i data-lucide="x"></i></button>
+    </div>
+    <p class="rolehint" id="roleHint"></p>
+    <nav>
+      <a class="navitem" href="#dashboard" data-view="dashboard" data-roles="analista marketing ayuda"><i data-lucide="layout-dashboard"></i>Dashboard</a>
+      <a class="navitem" href="#catalogo" data-view="catalogo" data-roles="analista marketing ayuda"><i data-lucide="list"></i>Catálogo</a>
+      <a class="navitem" href="#recoleccion" data-view="recoleccion" data-roles="analista"><i data-lucide="refresh-cw"></i>Recolección</a>
+      <a class="navitem" href="#dataset" data-view="dataset" data-roles="analista"><i data-lucide="database"></i>Dataset histórico</a>
+      <a class="navitem" href="#entrenamiento" data-view="entrenamiento" data-roles="analista"><i data-lucide="brain"></i>Entrenamiento</a>
+      <a class="navitem" href="#alertas" data-view="alertas" data-roles="analista ayuda"><i data-lucide="bell"></i>Alertas <span class="badge" id="alertBadge" hidden></span></a>
+      <a class="navitem" href="#reporte" data-view="reporte" data-roles="analista marketing"><i data-lucide="bar-chart-3"></i>Reporte de priorización</a>
+      <a class="navitem" href="#configuracion" data-view="configuracion" data-roles="analista marketing ayuda"><i data-lucide="settings"></i>Configuración</a>
+    </nav>
+    <div class="who">
+      <div class="avatar" id="avatarTxt"></div>
+      <div><p id="whoName"></p><p class="role" id="whoRole"></p></div>
+      <button type="button" class="icon" title="Cerrar sesión" onclick="logout()"><i data-lucide="log-out"></i></button>
+    </div>
+  </aside>
+  <button type="button" class="sidebar-backdrop" id="sidebarBackdrop" aria-label="Cerrar menú" hidden></button>
+
+  <main class="main">
+    <div class="topbar">
+      <button type="button" class="menu-toggle" id="sidebarToggle" aria-label="Abrir menú" aria-controls="sidebar" aria-expanded="false" title="Abrir menú"><i data-lucide="menu"></i><span>Menú</span></button>
+      <strong id="topTitle"></strong>
+    </div>
+
+    <section class="view" id="view-dashboard">
+      <h1>Dashboard de indicadores</h1>
+      <p class="lead" id="dashboardLead">Cargando los resultados de la última captura…</p>
+      <div class="stats">
+        <div class="stat">
+          <p class="label">Priorización de difusión</p>
+          <div class="row"><p class="value" id="dashboardOe1Value">—</p><p class="meta" id="dashboardOe1Meta">Sin datos</p></div>
+          <p class="trend" id="dashboardOe1Target">Meta: +25 %</p>
+        </div>
+        <div class="stat">
+          <p class="label">Perfiles por revisar</p>
+          <div class="row"><p class="value" id="dashboardOe2Value">—</p><p class="meta">riesgo alto abierto</p></div>
+          <p class="trend" id="dashboardOe2Target">Meta de exactitud del catálogo: 98 %</p>
+        </div>
+        <div class="stat">
+          <p class="label">Perfiles desfavorecidos</p>
+          <div class="row"><p class="value" id="dashboardOe3Value">—</p><p class="meta" id="dashboardOe3Meta">Sin datos</p></div>
+          <p class="trend" id="dashboardOe3Target">Meta de cobertura: 100 %</p>
+        </div>
+      </div>
+      <div class="two">
+        <div class="card pad">
+          <div class="card-head"><h2>Última captura</h2></div>
+          <p class="muted dashboard-empty" id="dashboardCatalogEmpty" hidden>Todavía no hay capturas completadas.</p>
+          <table id="dashboardCatalogTable">
+            <tbody>
+              <tr><td>Perfiles capturados</td><td class="num" id="dashboardCatalogTotal">—</td></tr>
+              <tr><td>Disponibles</td><td class="num" id="dashboardCatalogAvailable">—</td></tr>
+              <tr><td>No disponibles</td><td class="num" id="dashboardCatalogUnavailable">—</td></tr>
+              <tr><td>Sin publicar</td><td class="num" id="dashboardCatalogUnpublished">—</td></tr>
+              <tr><td>Prioridad alta / media / baja</td><td class="num" id="dashboardCatalogPriorities">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card pad">
+          <div class="card-head"><h2>Actividad reciente</h2></div>
+          <div class="tablewrap dashboard-activity-wrap">
+            <table><tbody id="dashboardActivityRows"><tr><td class="muted">Cargando actividad…</td></tr></tbody></table>
+          </div>
+        </div>
+      </div>
+      <div class="card dashboard-evolution-card">
+        <div class="card-head"><h2>Evolución por captura</h2><span class="muted">Últimas capturas completadas</span></div>
+        <div class="tablewrap dashboard-evolution-wrap">
+          <table>
+            <thead><tr><th>Captura</th><th>Perfiles</th><th>Disponibles</th><th>Prioridad alta</th><th>Riesgo alto</th><th>Perfiles desfavorecidos</th><th>Segmentos</th></tr></thead>
+            <tbody id="dashboardEvolutionRows"><tr><td colspan="7" class="muted">Cargando capturas…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="view hidden" id="view-catalogo">
+      <h1>Catálogo con predicción</h1>
+      <p class="lead" id="catalogLead">Las predicciones se calculan con el modelo vigente y se muestran para mascotas disponibles.</p>
+      <div class="catalog-filters" aria-label="Filtros visuales del catálogo">
+        <label for="catalogSearch">Buscar por SKU o nombre</label>
+        <input id="catalogSearch" type="search" maxlength="100" placeholder="Ej. WUF0001 o Arcanie" autocomplete="off">
+        <label for="catalogStateFilter">Estado</label>
+        <select id="catalogStateFilter">
+          <option value="">Todos</option>
+          <option value="disponible">Disponible</option>
+          <option value="no_disponible">No disponible</option>
+          <option value="sin_publicar">Sin publicar</option>
+        </select>
+        <label for="catalogPriorityFilter">Prioridad</label>
+        <select id="catalogPriorityFilter">
+          <option value="">Todas</option>
+          <option value="alta">Alta</option>
+          <option value="media">Media</option>
+          <option value="baja">Baja</option>
+          <option value="sin_prioridad">Sin prioridad</option>
+        </select>
+        <span class="muted" id="catalogFilterCount" aria-live="polite"></span>
+      </div>
+      <div class="card tablewrap">
+        <table>
+          <thead><tr><th>SKU</th><th>Nombre</th><th>Especie</th><th>Sexo</th><th>Edad</th><th>Pelaje</th><th>Tamaño</th><th>Energía</th><th>Condición especial</th><th>Orden</th><th>Estado</th><th>Probabilidad estimada de adopción</th><th>Prioridad</th></tr></thead>
+          <tbody id="catalogRows"><tr><td colspan="13" class="muted">Cargando catálogo…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="view hidden" id="view-recoleccion">
+      <h1>Recolección de datos del catálogo</h1>
+      <p class="lead">Selecciona un archivo CSV para importar una captura de catálogo y consultar su historial.</p>
+      <div class="card pad" id="collectionOverview" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+        <div><p style="font-size:13.3px;">Última captura</p><p class="muted" style="font-size:12px;" id="collectionLatest">Cargando información…</p></div>
+        <span class="tag neutral" id="collectionLatestStatus">Sin datos</span>
+      </div>
+      <div class="toolbar">
+        <input class="visually-hidden" id="collectionCsvFile" type="file" accept=".csv,text/csv" aria-label="Seleccionar archivo CSV de captura">
+        <button type="button" id="chooseCollectionFileButton"><i data-lucide="file-up"></i>1. Elegir archivo CSV</button>
+        <button type="button" class="primary" id="runCollectionButton" disabled><i data-lucide="upload"></i>2. Importar archivo seleccionado</button>
+        <span class="muted" id="collectionFileName">No hay archivo seleccionado.</span>
+      </div>
+      <div class="card tablewrap">
+        <table>
+          <thead><tr><th>Semana</th><th>Fecha de captura</th><th>Perfiles</th><th>Disponibles</th><th>No disponibles</th><th>Sin publicar</th><th>Estado</th></tr></thead>
+          <tbody id="collectionRuns"><tr><td colspan="7" class="muted">Cargando historial…</td></tr></tbody>
+        </table>
+      </div>
+      <ol class="steps">
+        <li>Usa un nombre con fecha: captura_AAAA-MM-DD.csv o captura_demo_AAAA-MM-DD.csv.</li>
+        <li>La API valida los perfiles y calcula la semana ISO desde la fecha del archivo.</li>
+        <li>Usa el mismo SKU para identificar una mascota en diferentes capturas.</li>
+      </ol>
+    </section>
+
+    <section class="view hidden" id="view-dataset">
+      <h1>Dataset histórico etiquetado</h1>
+      <p class="lead">Comparación de capturas completas y etiqueta final derivada para cada mascota de la cohorte.</p>
+      <div class="card dataset-period">
+        <label for="datasetFrom">Captura inicial</label>
+        <select id="datasetFrom" aria-label="Captura inicial para el dataset"></select>
+        <label for="datasetTo">Captura final</label>
+        <select id="datasetTo" aria-label="Captura final para el dataset"></select>
+        <span class="muted" id="datasetHorizon">Selecciona el periodo de seguimiento.</span>
+      </div>
+      <div class="toolbar">
+        <span class="tag neutral" id="datasetVersion">Sin dataset</span>
+        <span class="muted" id="datasetSummary">Todavía no hay datasets generados.</span>
+        <div class="spacer"></div>
+        <button type="button" class="secondary" id="generateDatasetButton">Generar dataset</button>
+        <button type="button" class="primary" id="exportDatasetButton" disabled><i data-lucide="download"></i>Exportar CSV</button>
+      </div>
+      <div class="dataset-filters" aria-label="Filtros visuales del dataset">
+        <label for="datasetSearch">Buscar por SKU o nombre</label>
+        <input id="datasetSearch" type="search" maxlength="100" placeholder="Ej. WUF0001 o Arcanie" autocomplete="off">
+        <label for="datasetLabelFilter">Etiqueta</label>
+        <select id="datasetLabelFilter">
+          <option value="">Todas</option>
+          <option value="permanece">Permanece</option>
+          <option value="salio_catalogo">Salió del catálogo</option>
+          <option value="indeterminada">Indeterminada</option>
+        </select>
+        <span class="muted" id="datasetFilterCount" aria-live="polite"></span>
+      </div>
+      <div class="card tablewrap">
+        <table>
+          <thead id="datasetHead"><tr><th>ID</th><th>Mascota</th><th>Orden</th><th>Etiqueta final</th></tr></thead>
+          <tbody id="datasetRows"><tr><td colspan="4" class="muted">Todavía no hay registros de dataset.</td></tr></tbody>
+        </table>
+      </div>
+      <p class="muted" id="datasetProvenance"></p>
+    </section>
+
+    <section class="view hidden" id="view-entrenamiento">
+      <h1>Entrenamiento del modelo predictivo</h1>
+      <div class="model-tabs" role="tablist" aria-label="Tipo de modelo">
+        <button type="button" class="model-tab active" id="adoptionTab" role="tab" aria-selected="true" aria-controls="adoptionPanel" data-model-tab="adoption">Predicción de Adopción (Random Forest)</button>
+        <button type="button" class="model-tab" id="consistencyTab" role="tab" aria-selected="false" aria-controls="consistencyPanel" data-model-tab="consistency" tabindex="-1">Riesgo de desactualización (Árbol de Decisión)</button>
+        <button type="button" class="model-tab" id="segmentationTab" role="tab" aria-selected="false" aria-controls="segmentationPanel" data-model-tab="segmentation" tabindex="-1">Perfiles desfavorecidos (K-Means)</button>
+      </div>
+      <div id="adoptionPanel" role="tabpanel" aria-labelledby="adoptionTab">
+      <p class="lead">Random Forest para estimar la probabilidad de adopción de las mascotas.</p>
+      <div class="card pad">
+        <div class="card-head"><h2>Entrenar una versión</h2></div>
+        <div class="formgrid model-form">
+          <div class="field"><label for="modelDataset">Dataset histórico</label><select id="modelDataset"></select></div>
+          <div class="field"><label for="modelTestSize">Porcentaje para prueba</label><select id="modelTestSize"><option value="0.2">20 %</option><option value="0.25">25 %</option><option value="0.3">30 %</option><option value="0.4">40 %</option></select></div>
+          <div class="field"><label for="modelTrees">Cantidad de árboles</label><input id="modelTrees" type="number" min="50" max="1000" step="50"></div>
+          <div class="field"><label for="modelDepth">Profundidad máxima</label><input id="modelDepth" type="number" min="2" max="50" placeholder="Sin límite"></div>
+        </div>
+        <p class="muted" id="modelThreshold"></p>
+        <div class="toolbar"><button type="button" class="primary" id="trainModelButton"><i data-lucide="brain"></i>Entrenar nueva versión</button></div>
+      </div>
+      <div class="card pad" id="currentModelCard">
+        <div class="card-head"><h2 id="modelTitle">Modelo vigente</h2><span class="tag neutral" id="modelStatus">Sin modelo</span></div>
+        <p class="muted" id="modelSummary">Entrena y publica una versión para ver sus métricas.</p>
+        <div class="metricgrid" id="modelMetrics"></div>
+      </div>
+      <div class="two">
+        <div class="card pad"><h2>Importancia global de variables</h2><div class="imp" id="modelImportance"><p class="muted">Sin resultados todavía.</p></div></div>
+        <div class="card pad"><h2>Matriz de confusión (prueba)</h2><div class="tablewrap"><table><thead><tr><th>Etiqueta real</th><th>Predicho: permanece</th><th>Predicho: salió</th></tr></thead><tbody id="modelConfusion"><tr><td colspan="3" class="muted">Sin resultados todavía.</td></tr></tbody></table></div><p class="muted" id="modelEvaluationNote"></p></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Historial de versiones</h2></div>
+        <div class="tablewrap"><table><thead><tr><th>Versión</th><th>Dataset</th><th>Estado</th><th>Accuracy</th><th>Entrenamiento</th><th>Acción</th></tr></thead><tbody id="modelHistory"><tr><td colspan="6" class="muted">Cargando modelos…</td></tr></tbody></table></div>
+      </div>
+      </div>
+      <div id="consistencyPanel" role="tabpanel" aria-labelledby="consistencyTab" hidden>
+      <p class="lead">Prioriza la revisión de perfiles disponibles según su antigüedad y permanencia en capturas recientes.</p>
+      <div class="card pad" id="consistencyTrainingPanel">
+        <div class="card-head"><h2>Entrenamiento y evaluación</h2></div>
+        <div class="consistency-training-options">
+          <label for="consistencyDepth">Profundidad máxima</label>
+          <select id="consistencyDepth" aria-describedby="consistencyParameterHelp">
+            <option value="1">1 nivel</option><option value="2">2 niveles</option>
+            <option value="3" selected>3 niveles</option><option value="4">4 niveles</option>
+          </select>
+          <label for="consistencyTestSize">Datos para prueba</label>
+          <select id="consistencyTestSize" aria-describedby="consistencyParameterHelp">
+            <option value="0.2">20 %</option><option value="0.25" selected>25 %</option>
+            <option value="0.3">30 %</option>
+          </select>
+        </div>
+        <p class="muted consistency-parameter-help" id="consistencyParameterHelp">El porcentaje indicado se reserva para prueba; el resto se usa para entrenar. La semilla se mantiene fija. El árbol aproxima la regla; Perfiles para revisión aplica la prioridad definida por la regla.</p>
+        <div class="toolbar consistency-train-actions"><button type="button" class="primary" id="trainConsistencyButton"><i data-lucide="git-branch"></i>Entrenar árbol y evaluar catálogo</button></div>
+        <div id="consistencyResults" hidden>
+        <p class="consistency-model-status" id="consistencyModelStatus" hidden></p>
+        <p class="muted" id="consistencyModelSummary"></p>
+        <div class="metricgrid" id="consistencyMetrics"></div>
+        <p class="muted" id="consistencyEvaluationNote" hidden></p>
+        <section class="tree-diagram-section" id="consistencyDiagramCard" hidden aria-labelledby="consistencyDiagramTitle">
+          <h2 id="consistencyDiagramTitle">Diagrama del árbol de decisión</h2>
+          <div class="tree-diagram-scroll" id="consistencyTreeDiagram"></div>
+        </section>
+        <div class="two" id="consistencyEvaluationDetails">
+          <div><h2>Contribución de variables al árbol</h2><p class="muted">Mide cuánto contribuye cada variable a las divisiones del árbol.</p><div class="imp" id="consistencyImportance"></div></div>
+          <div><h2>Matriz de confusión del árbol (prueba)</h2><div class="tablewrap"><table><thead><tr><th>Riesgo real</th><th>Bajo</th><th>Medio</th><th>Alto</th></tr></thead><tbody id="consistencyConfusion"></tbody></table></div></div>
+        </div>
+        <details class="consistency-rules" id="consistencyRulesDetails" hidden><summary>Reglas aprendidas por el árbol</summary><pre id="consistencyRules" class="rules"></pre></details>
+        </div>
+      </div>
+      <div class="card consistency-history">
+        <div class="card-head"><h2>Historial de árboles</h2></div>
+          <div class="tablewrap"><table><thead><tr><th>Versión</th><th>Estado</th><th>Accuracy</th><th>F1 macro</th><th>Entrenamiento</th><th>Acción</th></tr></thead><tbody id="consistencyHistory"><tr><td colspan="6" class="muted">Todavía no hay versiones.</td></tr></tbody></table></div>
+      </div>
+      </div>
+      <div id="segmentationPanel" role="tabpanel" aria-labelledby="segmentationTab" hidden>
+        <p class="lead">Agrupa todas las mascotas disponibles por sus características; después muestra cuáles cumplen criterios de perfil desfavorecido.</p>
+        <div class="card pad">
+          <div class="card-head"><h2>Entrenar segmentación</h2></div>
+          <div class="field segmentation-form-field"><label for="segmentationK">Cantidad de segmentos (K)</label>
+            <select id="segmentationK"><option value="2" selected>2 segmentos</option><option value="3">3 segmentos</option><option value="4">4 segmentos</option><option value="5">5 segmentos</option></select>
+          </div>
+          <p class="muted segmentation-options-summary" id="segmentationOptionsSummary">K-Means agrupa todas las mascotas disponibles. Los criterios de edad avanzada, tamaño grande y condición especial sirven para describir cuántos perfiles con esos atributos hay en cada grupo.</p>
+          <div class="toolbar segmentation-train-toolbar"><button type="button" class="primary" id="trainSegmentationButton"><i data-lucide="network"></i>Entrenar K-Means</button></div>
+        </div>
+        <div class="card pad" id="segmentationCurrentCard">
+          <div class="card-head"><h2 id="segmentationModelTitle">Segmentación vigente</h2><span class="tag neutral" id="segmentationModelStatus">Sin modelo</span></div>
+          <p class="muted" id="segmentationModelSummary">Entrena y activa una versión para agrupar el catálogo disponible.</p>
+          <div class="segmentation-clusters" id="segmentationClusterSummaries"></div>
+        </div>
+        <div class="card pad segmentation-scatter-card" id="segmentationScatterCard" hidden>
+          <div class="card-head"><h2>Gráfico de dispersión de clústeres</h2></div>
+          <p class="muted" id="segmentationScatterNote">Cada punto representa un perfil. La proyección resume las variables en dos ejes para facilitar la lectura; los segmentos se calculan con todas las variables.</p>
+          <div class="segmentation-scatter" id="segmentationScatter" aria-live="polite"></div>
+          <div class="segmentation-scatter-legend" id="segmentationScatterLegend" aria-label="Leyenda de segmentos"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Historial de segmentaciones</h2></div>
+          <div class="tablewrap"><table><thead><tr><th>Versión</th><th>Captura</th><th>Perfiles</th><th>Segmentos</th><th>Silhouette</th><th>Estado</th><th>Acción</th></tr></thead><tbody id="segmentationHistory"><tr><td colspan="7" class="muted">Cargando modelos…</td></tr></tbody></table></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view hidden" id="view-alertas">
+      <h1>Alertas de desactualización</h1>
+      <p class="lead" id="consistencyAlertsSummary">Alertas de prioridad alta generadas al evaluar una captura completa. Cada caso requiere verificación del Área de Ayuda.</p>
+      <div class="consistency-filters">
+        <label for="consistencySearch">Buscar por SKU o nombre</label><input id="consistencySearch" type="search" placeholder="SKU o nombre">
+        <label for="alertStateFilter">Estado</label><select id="alertStateFilter"><option value="todos">Todos</option><option value="pendiente">Pendiente</option><option value="en_revision">En revisión</option><option value="resuelta">Resuelta</option></select>
+        <span class="muted" id="consistencyFilterCount">—</span>
+      </div>
+      <section class="alerts-group" aria-labelledby="openAlertsTitle">
+        <h2 class="alerts-group-title" id="openAlertsTitle">Pendientes y en revisión <span class="alerts-group-count" id="openAlertsCount">—</span></h2>
+        <div class="card" id="consistencyItems" aria-live="polite"><p class="muted pad">Cargando alertas…</p></div>
+      </section>
+      <section class="alerts-group" aria-labelledby="resolvedAlertsTitle">
+        <h2 class="alerts-group-title" id="resolvedAlertsTitle">Resueltas <span class="alerts-group-count" id="resolvedAlertsCount">—</span></h2>
+        <div class="card" id="resolvedAlertItems" aria-live="polite"><p class="muted pad">Cargando alertas…</p></div>
+      </section>
+    </section>
+
+    <section class="view hidden" id="view-reporte">
+      <h1>Reporte de priorización</h1>
+      <p class="lead" id="reportLead">Cargando la última captura y las predicciones del modelo vigente…</p>
+      <p class="report-empty muted" id="reportEmpty" hidden></p>
+      <div class="card pad chart" id="reportChartCard" hidden>
+        <h2 class="report-chart-title">Distribución de mascotas por prioridad</h2>
+        <div class="bars" id="reportBars" aria-label="Cantidad de mascotas por prioridad">
+          <div class="bar-col">
+            <div class="n" id="reportHighCount">0</div><div class="bar report-bar-high" id="reportHighBar"></div>
+            <div class="bar-label"><span class="l">Alta</span><span class="report-help"><button type="button" class="report-help-button" aria-label="Qué significa prioridad alta" aria-expanded="false" aria-describedby="reportHighHelp">i</button><span class="report-tooltip" id="reportHighHelp" role="tooltip">Menor probabilidad estimada de adopción; conviene priorizar su difusión.</span></span></div>
+          </div>
+          <div class="bar-col">
+            <div class="n" id="reportMediumCount">0</div><div class="bar report-bar-medium" id="reportMediumBar"></div>
+            <div class="bar-label"><span class="l">Media</span><span class="report-help"><button type="button" class="report-help-button" aria-label="Qué significa prioridad media" aria-expanded="false" aria-describedby="reportMediumHelp">i</button><span class="report-tooltip" id="reportMediumHelp" role="tooltip">Probabilidad estimada intermedia; mantener difusión regular.</span></span></div>
+          </div>
+          <div class="bar-col">
+            <div class="n" id="reportLowCount">0</div><div class="bar report-bar-low" id="reportLowBar"></div>
+            <div class="bar-label"><span class="l">Baja</span><span class="report-help"><button type="button" class="report-help-button" aria-label="Qué significa prioridad baja" aria-expanded="false" aria-describedby="reportLowHelp">i</button><span class="report-tooltip" id="reportLowHelp" role="tooltip">Mayor probabilidad estimada de adopción; prioridad menor de difusión.</span></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="toolbar" id="reportToolbar" hidden>
+        <label for="reportSearch">Buscar por SKU o nombre</label>
+        <input id="reportSearch" type="search" maxlength="100" placeholder="Ej. WUF0001 o Arcanie" autocomplete="off">
+        <label for="reportPriorityFilter">Prioridad</label>
+        <select id="reportPriorityFilter">
+          <option value="">Todas</option><option value="alta">Alta</option>
+          <option value="media">Media</option><option value="baja">Baja</option>
+        </select>
+        <span class="muted" id="reportFilterCount" aria-live="polite"></span>
+        <div class="spacer"></div>
+        <div class="report-export-actions">
+          <button type="button" id="exportReportPdf"><i data-lucide="file-text"></i>Exportar PDF</button>
+          <button type="button" class="primary" id="exportReportXlsx"><i data-lucide="download"></i>Exportar Excel</button>
+        </div>
+      </div>
+      <div class="card report-table-card">
+        <div class="card-head"><h2>Mascotas ordenadas por prioridad</h2><span class="muted" id="reportTotal"></span></div>
+        <div class="tablewrap report-table-scroll">
+          <table>
+            <thead><tr><th>SKU</th><th>Nombre</th><th>Especie</th><th>Sexo</th><th>Edad</th><th>Tamaño</th><th>Condición especial</th><th>Orden</th><th>Probabilidad estimada de adopción</th><th>Prioridad</th></tr></thead>
+            <tbody id="reportRows"><tr><td colspan="10" class="muted">Cargando reporte…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card pad report-segment-card" id="reportOe3Summary" hidden>
+        <div class="card-head"><h2>Segmentos del catálogo</h2><span class="muted" id="reportOe3SummaryMeta"></span></div>
+        <p class="muted" id="reportOe3State"></p>
+        <div class="segmentation-clusters" id="reportOe3Clusters"></div>
+      </div>
+      <div class="toolbar report-oe3-toolbar" id="reportOe3Toolbar" hidden>
+        <label for="reportOe3Search">Buscar por SKU o nombre</label>
+        <input id="reportOe3Search" type="search" maxlength="100" placeholder="Ej. WUF0001 o Arcanie" autocomplete="off">
+        <label for="reportOe3Filter">Segmento</label>
+        <select id="reportOe3Filter"><option value="">Todos</option></select>
+        <span class="muted" id="reportOe3FilterCount" aria-live="polite"></span>
+      </div>
+      <div class="card report-table-card" id="reportOe3TableCard" hidden>
+        <div class="card-head"><h2>Mascotas disponibles agrupadas por segmento</h2><span class="muted" id="reportOe3Total"></span></div>
+        <div class="tablewrap report-table-scroll">
+          <table><thead><tr><th>SKU</th><th>Nombre</th><th>Atributos desfavorecidos</th><th>Segmento</th><th>Resumen del segmento</th></tr></thead>
+            <tbody id="reportOe3Rows"><tr><td colspan="5" class="muted">Todavía no hay un modelo de segmentación aplicado.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card report-history-card">
+        <div class="card-head"><h2>Historial de reportes</h2><span class="muted">Las exportaciones quedan guardadas aquí</span></div>
+        <div class="tablewrap report-history-scroll">
+          <table>
+            <thead><tr><th>Fecha</th><th>Semana</th><th>Modelo de prioridad</th><th>Modelo de segmentación</th><th>Mascotas priorizadas</th><th>Perfiles segmentados</th><th>Formato</th><th>Generado por</th><th>Acción</th></tr></thead>
+            <tbody id="reportHistoryRows"><tr><td colspan="9" class="muted">Cargando historial…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="view hidden" id="view-configuracion">
+      <h1>Configuración</h1>
+      <p class="lead">Preferencias de apariencia y cuenta</p>
+      <div class="card pad">
+        <h2>Apariencia</h2>
+        <div class="settings-grid">
+          <div class="field"><label for="cfgTema">Tema</label>
+            <select id="cfgTema" onchange="applyTheme(this.value)"><option value="sistema">Según el sistema</option><option value="light">Claro</option><option value="dark">Oscuro</option></select></div>
+        </div>
+      </div>
+      <div class="card pad">
+        <h2>Perfil</h2>
+        <form id="profileForm" class="settings-form">
+          <div class="settings-grid">
+            <div class="field"><label for="cfgNombre">Nombre</label><input id="cfgNombre" type="text" maxlength="100" required autocomplete="name"></div>
+            <div class="field"><label for="cfgEmail">Correo electrónico</label><input id="cfgEmail" type="email" disabled autocomplete="email"></div>
+          </div>
+          <div class="toolbar"><button id="saveProfileButton" type="submit" class="primary"><i data-lucide="save"></i>Guardar nombre</button></div>
+        </form>
+      </div>
+      <div class="card pad">
+        <h2>Cambiar contraseña</h2>
+        <form id="passwordForm" class="settings-form">
+          <div class="settings-grid">
+            <div class="field"><label for="cfgCurrentPassword">Contraseña actual</label><input id="cfgCurrentPassword" type="password" required autocomplete="current-password"></div>
+            <div class="field"><label for="cfgPass1">Nueva contraseña</label><input id="cfgPass1" type="password" minlength="8" maxlength="256" required autocomplete="new-password"></div>
+            <div class="field"><label for="cfgPass2">Confirmar nueva contraseña</label><input id="cfgPass2" type="password" minlength="8" maxlength="256" required autocomplete="new-password"></div>
+          </div>
+          <div class="toolbar"><button id="changePasswordButton" type="submit" class="primary"><i data-lucide="key-round"></i>Actualizar contraseña</button></div>
+        </form>
+      </div>
+    </section>
+  </main>
+</div>
+</div>
+
+<script src="config.js"></script>
+<div id="toastRegion" class="toast-region" aria-label="Mensajes del sistema"></div>
+<script src="app.js?v=account-profile-final-schema"></script>
+</body>
+</html>
