@@ -170,7 +170,10 @@ class ModelRepository:
             return {
                 "items": [],
                 "modelo_version": None,
-                "mensaje": "Las predicciones del catálogo requieren una base v2/v3 con la migración HU03 aplicada.",
+                "mensaje": (
+                    "La base conectada no contiene el esquema final de predicciones. "
+                    "Crea una base vacía y ejecuta backend/schema_wuf_predict_db_final.sql."
+                ),
             }
         rows = self._session.execute(text("""
             WITH latest_capture AS (

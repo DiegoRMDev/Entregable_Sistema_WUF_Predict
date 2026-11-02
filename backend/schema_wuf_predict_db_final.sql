@@ -1,17 +1,13 @@
--- Instalador único del esquema final para PostgreSQL 16.
--- Crea una base nueva vacía (por ejemplo, wuf_predict_db) y ejecuta este archivo allí.
--- Este script crea las tablas dentro de la base seleccionada; no crea ni elimina bases.
-
--- WUF Predict: esquema completo para HU01–HU08 y segmentación OE3 con K-Means.
--- Ejecutar SOLO conectado a una base vacía.
--- No crea ni elimina bases; conserva backend/schema.sql para la instalación anterior.
--- Integra las estructuras de HU03, HU04 y la persistencia/auditoría de HU07.
--- En una base nueva, ejecuta solo este archivo: no ejecutes scripts upgrade después.
--- Los archivos upgrade_hu04_*.sql se reservan para bases anteriores que aún los necesiten.
--- Integra la agrupación K-Means de HU06 sin añadir especie ni mezclar sus resultados con OE1.
--- HU01 recibirá la fecha de captura del CSV, mientras fecha_inicio/fecha_fin
--- auditan el momento real de importación. La semana se calcula en la aplicación
--- mediante calendario ISO y se verifica aquí contra la fecha de captura.
+-- WUF Predict: esquema final e integral para PostgreSQL 16.
+-- Instalador único para una base de datos nueva y vacía, creada previamente.
+-- Ejecutar conectado a la base de destino; este archivo no crea ni elimina bases.
+-- Incluye las estructuras necesarias para HU01–HU08 y los algoritmos de OE1, OE2 y OE3.
+-- Para una instalación limpia, ejecutar solo este archivo; no se requieren migraciones.
+-- No ejecutar sobre una base existente con datos: este esquema crea las tablas desde cero.
+-- HU01 registra la fecha de captura del CSV; fecha_inicio/fecha_fin auditan la importación.
+-- La semana se calcula con calendario ISO y se valida contra la fecha de captura.
+-- snapshot_catalogo guarda observaciones del catálogo; HU02 deriva las etiquetas
+-- en dataset_detalle a partir de los estados observados entre capturas.
 
 BEGIN;
 
@@ -133,19 +129,11 @@ CREATE TABLE snapshot_catalogo (
     estado_detectado VARCHAR(20) NOT NULL,
     fecha_publicacion DATE NOT NULL,
     url_perfil VARCHAR(255) NOT NULL,
-    -- Campo heredado del diseño académico; HU02 no lo usa como etiqueta derivada.
-    etiqueta_adoptado BOOLEAN NULL,
-    origen_etiqueta VARCHAR(20) NULL,
     CONSTRAINT ck_snapshot_semana CHECK (
         semana BETWEEN 1 AND 53 AND semana = EXTRACT(WEEK FROM fecha_captura)::SMALLINT
     ),
     CONSTRAINT ck_snapshot_edad CHECK (edad_meses IS NULL OR edad_meses >= 0),
     CONSTRAINT ck_snapshot_orden CHECK (orden_publicacion > 0),
-    CONSTRAINT ck_snapshot_origen_etiqueta CHECK (
-        (etiqueta_adoptado IS NULL AND origen_etiqueta IS NULL)
-        OR (etiqueta_adoptado IS NOT NULL AND origen_etiqueta IS NOT NULL
-            AND origen_etiqueta IN ('sintetica', 'verificada', 'inferida', 'desconocida'))
-    ),
     CONSTRAINT uq_snapshot_ejecucion_mascota UNIQUE (id_ejecucion, id_mascota)
 );
 

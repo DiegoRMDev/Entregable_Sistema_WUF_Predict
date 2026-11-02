@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 
-SCHEMA_PATH = Path(__file__).resolve().parents[1] / "schema_wuf_predict_db.sql"
+SCHEMA_PATH = Path(__file__).resolve().parents[1] / "schema_wuf_predict_db_final.sql"
 
 
 class FinalSchemaTests(unittest.TestCase):
@@ -19,3 +19,5 @@ class FinalSchemaTests(unittest.TestCase):
         self.assertNotIn("adopcion", tables)
         self.assertIn("nombre_usuario_generador VARCHAR(100) NOT NULL", schema)
         self.assertIn("nombre_usuario_actor VARCHAR(100) NOT NULL", schema)
+        self.assertNotIn("etiqueta_adoptado", schema)
+        self.assertNotRegex(schema, r"\borigen_etiqueta\b")

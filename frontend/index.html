@@ -5,10 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>WUF Predict</title>
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="styles.css?v=hu06-export-row-2">
+<link rel="stylesheet" href="/src/styles/main.css">
 <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 </head>
 <body>
+
+<div id="appBoot" class="app-boot" role="status" aria-live="polite">
+  <span class="app-boot-spinner" aria-hidden="true"></span>
+  <span>Verificando tu sesión…</span>
+</div>
 
 <div id="login">
   <form class="login-card" onsubmit="return login(event)">
@@ -434,8 +439,9 @@
 </div>
 </div>
 
-<script src="config.js"></script>
+<script src="/public/config.js"></script>
 <div id="toastRegion" class="toast-region" aria-label="Mensajes del sistema"></div>
-<script src="app.js?v=account-profile-final-schema"></script>
+<!-- Punto de entrada; importa los módulos de la interfaz. -->
+<script type="module" src="/src/main.js"></script>
 </body>
 </html>

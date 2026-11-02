@@ -176,8 +176,6 @@ class CsvCatalogSource:
                     CatalogPet(
                         **profile.model_dump(exclude={"etiquetas", "etiqueta_adoptado"}),
                         etiquetas=labels,
-                        etiqueta_adoptado=None,
-                        origen_etiqueta=None,
                     )
                 )
                 counts[profile.estado_publicado] += 1

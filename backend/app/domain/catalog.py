@@ -27,9 +27,6 @@ class CatalogPet:
     url_perfil: str
     etiquetas: tuple[str, ...] | None = None
     id_mascota: int | None = None
-    # Etiqueta de ejemplo explícita; su procedencia evita confundirla con adopción verificada.
-    etiqueta_adoptado: bool | None = None
-    origen_etiqueta: str | None = None
 
 
 class CatalogSource(Protocol):
