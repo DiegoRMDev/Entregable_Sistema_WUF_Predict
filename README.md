@@ -1,6 +1,6 @@
 # WUF Predict
 
-Sistema de apoyo para WUF que organiza la información del catálogo de mascotas, estima probabilidades de adopción, alerta de los estados desactualizados para su revisión, mediante herramientas y algoritmos de Machine Learning.
+Sistema de apoyo predictivo para WUF . Este estima probabilidades de adopción, alerta de los estados desactualizados para su revisión y segmenta perfiles desfavorecidos mediante herramientas y algoritmos de ML.
 
 Para conocer el proyecto y ponerlo en marcha, consulta estas guías:
 
